@@ -7,6 +7,8 @@
 #include "processPointClouds.h"
 // using templates for processPointClouds so also include .cpp to help linker
 #include "processPointClouds.cpp"
+#include <memory>
+#include <iostream>
 
 std::vector<Car> initHighway(bool renderScene, pcl::visualization::PCLVisualizer::Ptr& viewer)
 {
@@ -42,13 +44,26 @@ void simpleHighway(pcl::visualization::PCLVisualizer::Ptr& viewer)
     // ----------------------------------------------------
     
     // RENDER OPTIONS
-    bool renderScene = true;
+//    bool renderScene = true;
+    bool renderScene = false;
     std::vector<Car> cars = initHighway(renderScene, viewer);
     
-    // TODO:: Create lidar sensor 
+    // TODO:: Create lidar sensor
+    double setGroundSlope{0};
+    Lidar* lidar = new Lidar(cars, setGroundSlope );
+    pcl::PointCloud<pcl::PointXYZ>::Ptr LidarScan = lidar->scan();   //scan the area to generate point cloud
+//    renderRays(viewer, lidar->position,LidarScan); // visualize point cloud
+//    renderPointCloud(viewer,LidarScan, "mypointclouddata",Color(1,0,0));
 
     // TODO:: Create point processor
-  
+
+    ProcessPointClouds<pcl::PointXYZ> myprocess;
+//    ProcessPointClouds<pcl::PointXYZ>* myprocess2ptr =  new ProcessPointClouds<pcl::PointXYZ>();
+//    std::unique_ptr<ProcessPointClouds<pcl::PointXYZ>> myprocessdataptr = std::make_unique<ProcessPointClouds<pcl::PointXYZ>>();
+//    std::unique_ptr<int> myptr = std::make_unique<int>(int)
+    std::pair<typename pcl::PointCloud<pcl::PointXYZ>::Ptr, typename pcl::PointCloud<pcl::PointXYZ>::Ptr> mypair =  myprocess.SegmentPlane(LidarScan,1000,0.01);
+    renderPointCloud(viewer,mypair.first, "cloud_plane",Color(1,0,0));
+    renderPointCloud(viewer,mypair.second, "cloud_obst",Color(0,1,0));
 }
 
 
