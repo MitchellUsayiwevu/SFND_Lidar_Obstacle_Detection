@@ -59,9 +59,7 @@ void simpleHighway(pcl::visualization::PCLVisualizer::Ptr& viewer)
 
     ProcessPointClouds<pcl::PointXYZ> myprocess;
 //    ProcessPointClouds<pcl::PointXYZ>* myprocess2ptr =  new ProcessPointClouds<pcl::PointXYZ>();
-//    std::unique_ptr<ProcessPointClouds<pcl::PointXYZ>> myprocessdataptr = std::make_unique<ProcessPointClouds<pcl::PointXYZ>>();
-//    std::unique_ptr<int> myptr = std::make_unique<int>(int)
-    std::pair<typename pcl::PointCloud<pcl::PointXYZ>::Ptr, typename pcl::PointCloud<pcl::PointXYZ>::Ptr> mypair =  myprocess.SegmentPlane(LidarScan,1000,0.01);
+    std::pair<typename pcl::PointCloud<pcl::PointXYZ>::Ptr, typename pcl::PointCloud<pcl::PointXYZ>::Ptr> mypair =  myprocess.SegmentPlane(LidarScan,1000,0.2);
     renderPointCloud(viewer,mypair.first, "cloud_plane",Color(1,0,0));
     renderPointCloud(viewer,mypair.second, "cloud_obst",Color(0,1,0));
 }
