@@ -64,10 +64,6 @@ pcl::visualization::PCLVisualizer::Ptr initScene()
   	return viewer;
 }
 
-void fitLine(double x1, double y1, double x2, double y2, double& A,double &B, double &C ){
-
-}
-
 std::unordered_set<int> Ransac(pcl::PointCloud<pcl::PointXYZ>::Ptr cloud, int maxIterations, float distanceTol)
 {
 	std::unordered_set<int> inliersResult;
