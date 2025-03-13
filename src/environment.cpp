@@ -59,9 +59,23 @@ void simpleHighway(pcl::visualization::PCLVisualizer::Ptr& viewer)
 
     ProcessPointClouds<pcl::PointXYZ> myprocess;
 //    ProcessPointClouds<pcl::PointXYZ>* myprocess2ptr =  new ProcessPointClouds<pcl::PointXYZ>();
-    std::pair<typename pcl::PointCloud<pcl::PointXYZ>::Ptr, typename pcl::PointCloud<pcl::PointXYZ>::Ptr> mypair =  myprocess.SegmentPlane(LidarScan,1000,0.2);
-    renderPointCloud(viewer,mypair.first, "cloud_plane",Color(1,0,0));
-    renderPointCloud(viewer,mypair.second, "cloud_obst",Color(0,1,0));
+    std::pair< pcl::PointCloud<pcl::PointXYZ>::Ptr, pcl::PointCloud<pcl::PointXYZ>::Ptr> mysegments =  myprocess.SegmentPlane(LidarScan,1000,0.2);
+    renderPointCloud(viewer,mysegments.first, "cloud_plane",Color(1,0,0));
+//    renderPointCloud(viewer,mysegments.second, "cloud_obst",Color(0,1,0));
+
+    std::vector< pcl::PointCloud<pcl::PointXYZ>::Ptr> myclusters =  myprocess.Clustering( mysegments.second,1.0, 3, 30);
+
+    std::vector<Color> colors = {Color(1,1,0), Color(0,0,1),Color(0,1,1),Color(1,0,1)};
+    int pointcloudId =0;
+
+    for(auto& cluster : myclusters){
+        std::cout<<"cluster size";
+        myprocess.numPoints(cluster);
+        renderPointCloud(viewer,cluster, "obstacle"+std::to_string(pointcloudId),colors[pointcloudId%colors.size()]);
+        pointcloudId++;
+    }
+
+
 }
 
 
