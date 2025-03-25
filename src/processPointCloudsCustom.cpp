@@ -1,6 +1,6 @@
 // PCL lib Functions for processing point clouds 
 
-#include "processPointClouds.h"
+#include "processPointCloudsCustom.h"
 
 
 //constructor:
@@ -95,29 +95,106 @@ std::pair<typename pcl::PointCloud<PointT>::Ptr, typename pcl::PointCloud<PointT
     return segResult;
 }
 
+template<typename PointT>
+void ProcessPointClouds<PointT>::crossProduct(double vect_A[3], double vect_B[3], double (& cross_P)[3]){
+
+    cross_P[0] = vect_A[1] * vect_B[2] - vect_A[2] * vect_B[1];
+    cross_P[1] = vect_A[2] * vect_B[0] - vect_A[0] * vect_B[2];
+    cross_P[2] = vect_A[0] * vect_B[1] - vect_A[1] * vect_B[0];
+}
+
+template<typename PointT>
+std::unordered_set<int> ProcessPointClouds<PointT>::Ransac_alg(typename pcl::PointCloud<PointT>::Ptr cloud, int maxIterations, float distanceThreshold){
+
+    std::mt19937 generator(int(std::time(0)));
+    std::uniform_int_distribution<int> dist(0, cloud->points.size() - 1);
+    std::unordered_set<int> samples;
+    float x1,y1, z1,x2,y2,z2,x3,y3,z3,x4,y4,z4, A, B, C, D;
+    float distance ;
+
+
+    std::unordered_set<int> inliersResult;
+
+
+    for (int i=0; i<maxIterations; i++){
+
+        // use set as the container for samples because the 2 points need to be unique and set won't allow repeating the same sample twice.
+        while( samples.size() < 3 ){
+            samples.insert(dist(generator));
+        }
+
+        auto itt = samples.begin();
+        x1 = cloud->points[*itt].x;
+        y1 = cloud->points[*itt].y;
+        z1 = cloud->points[*itt].z;
+        itt++;
+        x2 = cloud->points[*itt].x;
+        y2 = cloud->points[*itt].y;
+        z2 = cloud->points[*itt].z;
+        itt++;
+        x3 = cloud->points[*itt].x;
+        y3 = cloud->points[*itt].y;
+        z3 = cloud->points[*itt].z;
+
+
+        double vect_A[3] = { (x2-x1), (y2-y1),(z2-z1)};
+        double vect_B[3] = { (x3-x1), (y3-y1),(z3-z1)};
+        double cross_P[3];
+
+        crossProduct( vect_A,  vect_B,  cross_P);
+
+        double norm_Cross_P = sqrt( pow(cross_P[0],2) + pow(cross_P[1],2)+ pow(cross_P[2],2) );
+
+        A = cross_P[0]/norm_Cross_P;
+        B = cross_P[1]/norm_Cross_P;
+        C = cross_P[2]/norm_Cross_P;
+
+        D = -( (A*x1) + (B*y1) + (C*z1));
+
+        for (int j=0; j<cloud->points.size(); j++){
+
+            if (samples.count(j)>0){
+                continue;
+            }
+
+            x3 = cloud->points[j].x;
+            y3 = cloud->points[j].y;
+            z3 = cloud->points[j].z;
+
+            distance = fabs( (A*x3)+(B*y3)+(C*z3)+D) / sqrt( pow(A,2) + pow(B,2) + pow(C,2) );
+
+            if (distance < distanceThreshold){
+                samples.insert(j);
+            }
+
+
+        }
+
+        if(inliersResult.size()<samples.size()){
+            inliersResult = samples;
+        }
+
+        return inliersResult;
+
+    }
+}
 
 template<typename PointT>
 std::pair<typename pcl::PointCloud<PointT>::Ptr, typename pcl::PointCloud<PointT>::Ptr> ProcessPointClouds<PointT>::SegmentPlane(typename pcl::PointCloud<PointT>::Ptr cloud, int maxIterations, float distanceThreshold)
 {
     // Time segmentation process
     auto startTime = std::chrono::steady_clock::now();
-//	pcl::PointIndices::Ptr inliers;
     // TODO:: Fill in this function to find inliers for the cloud.
     pcl::ModelCoefficients::Ptr coefficients (new pcl::ModelCoefficients ());
     pcl::PointIndices::Ptr inliers (new pcl::PointIndices ());
-    typename pcl::SACSegmentation<PointT> seg;
 
-    seg.setOptimizeCoefficients(true);
 
-    seg.setModelType (pcl::SACMODEL_PLANE);
-    seg.setMethodType (pcl::SAC_RANSAC);
-    seg.setMaxIterations (maxIterations);
-    seg.setDistanceThreshold (distanceThreshold);
+    std::unordered_set<int> inliers_set = Ransac_alg(cloud,maxIterations,distanceThreshold);
 
-    seg.setInputCloud (cloud);
-    seg.segment (*inliers, *coefficients);
+    for (auto i : inliers_set) {
+        inliers->indices.push_back(i);
+    }
 
-    typename pcl::ExtractIndices<PointT> extract;
 
     if (inliers->indices.size () == 0){
         std::cerr << "Could not estimate a planar model for the given dataset." << std::endl;

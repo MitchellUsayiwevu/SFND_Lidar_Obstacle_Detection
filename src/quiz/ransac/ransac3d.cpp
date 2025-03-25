@@ -12,6 +12,7 @@
 #include <random>
 #include <iostream>
 #include <cmath>
+#include "RANSAC.h"
 
 pcl::PointCloud<pcl::PointXYZ>::Ptr CreateData()
 {
@@ -59,7 +60,7 @@ pcl::PointCloud<pcl::PointXYZ>::Ptr CreateData3D()
 
 pcl::visualization::PCLVisualizer::Ptr initScene()
 {
-    pcl::visualization::PCLVisualizer::Ptr viewer(new pcl::visualization::PCLVisualizer ("2D Viewer"));
+    pcl::visualization::PCLVisualizer::Ptr viewer(new pcl::visualization::PCLVisualizer ("3D Viewer"));
     viewer->setBackgroundColor (0, 0, 0);
     viewer->initCameraParameters();
     viewer->setCameraPosition(0, 0, 15, 0, 1, 0);
@@ -79,7 +80,7 @@ void crossProduct(double vect_A[3], double vect_B[3], double (& cross_P)[3])
 std::unordered_set<int> Ransac(pcl::PointCloud<pcl::PointXYZ>::Ptr cloud, int maxIterations, float distanceTol)
 {
     std::unordered_set<int> inliersResult;
-    std::vector<double>line_eqn;
+//    std::vector<double>line_eqn;
     srand(time(NULL));
 
     std::mt19937 generator(int(std::time(0)));
@@ -144,11 +145,11 @@ std::unordered_set<int> Ransac(pcl::PointCloud<pcl::PointXYZ>::Ptr cloud, int ma
 
         if(inliersResult.size()<samples.size()){
             inliersResult = samples;
-            line_eqn.clear();
-            line_eqn.push_back(A);
-            line_eqn.push_back(B);
-            line_eqn.push_back(C);
-            line_eqn.push_back(D);
+//            line_eqn.clear();
+//            line_eqn.push_back(A);
+//            line_eqn.push_back(B);
+//            line_eqn.push_back(C);
+//            line_eqn.push_back(D);
         }
 
         return inliersResult;
@@ -180,7 +181,13 @@ int main ()
 
 
     // TODO: Change the max iteration and distance tolerance arguments for Ransac function
-    std::unordered_set<int> inliers = Ransac(cloud, 100, 1.0);
+
+//    std::unordered_set<int> inliers = Ransac(cloud, 100, 1.0);
+    int max_iter = 100;
+    float dist_tol = 1.0;
+//    RANSAC<pcl::PointXYZ>* ransac_ptr = new RANSAC<pcl::PointXYZ>(cloud, 100,1.0);
+    RANSAC<pcl::PointXYZ>* ransac_ptr = new RANSAC<pcl::PointXYZ>(cloud, max_iter,dist_tol);
+    std::unordered_set<int> inliers = ransac_ptr->Ransac_alg();
 
     pcl::PointCloud<pcl::PointXYZ>::Ptr  cloudInliers(new pcl::PointCloud<pcl::PointXYZ>());
     pcl::PointCloud<pcl::PointXYZ>::Ptr cloudOutliers(new pcl::PointCloud<pcl::PointXYZ>());
