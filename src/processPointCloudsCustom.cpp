@@ -180,6 +180,50 @@ std::unordered_set<int> ProcessPointClouds<PointT>::Ransac_alg(typename pcl::Poi
 }
 
 template<typename PointT>
+void ProcessPointClouds<PointT>::clusterHelper( int indice, const std::vector<std::vector<float>>& points, std::vector<int> & cluster, std::vector<bool> &processed, KdTree* tree, float distanceTol){
+
+    processed[indice] = true;
+    cluster.push_back(indice);
+
+    std::vector<int> nearest = tree->search(points[indice],distanceTol);
+
+    for( int id:nearest){
+
+        if(!processed[id]){
+            clusterHelper(id,points,cluster,processed,tree,distanceTol);
+        }
+    }
+
+}
+
+template<typename PointT>
+std::vector<std::vector<int>> ProcessPointClouds<PointT>::euclideanCluster(const std::vector<std::vector<float>>points, KdTree* tree, float distanceTol)
+{
+
+    // TODO: Fill out this function to return list of indices for each cluster
+
+    std::vector<std::vector<int>> clusters;
+
+    std::vector<bool> processed(points.size(),false);
+
+    int i =0;
+    while(i<points.size()){
+        if(processed[i]){
+            i++;
+            continue;
+        }
+
+        std::vector<int> cluster;
+        clusterHelper(i, points, cluster, processed, tree, distanceTol);
+        clusters.push_back(cluster);
+        i++;
+    }
+
+    return clusters;
+
+}
+
+template<typename PointT>
 std::pair<typename pcl::PointCloud<PointT>::Ptr, typename pcl::PointCloud<PointT>::Ptr> ProcessPointClouds<PointT>::SegmentPlane(typename pcl::PointCloud<PointT>::Ptr cloud, int maxIterations, float distanceThreshold)
 {
     // Time segmentation process
@@ -217,33 +261,35 @@ std::vector<typename pcl::PointCloud<PointT>::Ptr> ProcessPointClouds<PointT>::C
     auto startTime = std::chrono::steady_clock::now();
 
     std::vector<typename pcl::PointCloud<PointT>::Ptr> clusters;
+    std::vector<std::vector<float>> points;
 
-    typename pcl::search::KdTree<PointT>::Ptr tree (new pcl::search::KdTree<PointT>);
-   tree->setInputCloud (cloud);
+    KdTree* tree = new KdTree;
 
-   std::vector<pcl::PointIndices> cluster_indices;
-   typename pcl::EuclideanClusterExtraction<PointT> ec;
-   ec.setClusterTolerance (clusterTolerance); // 2cm
-   ec.setMinClusterSize (minSize);
-   ec.setMaxClusterSize (maxSize);
-   ec.setSearchMethod (tree);
-   ec.setInputCloud (cloud);
-   ec.extract (cluster_indices);
 
-    int j = 0;
-   for (const auto& cluster : cluster_indices)
-        {
-            typename pcl::PointCloud<PointT>::Ptr cloud_cluster (new pcl::PointCloud<PointT>);
-            for (const auto& idx : cluster.indices) {
-                cloud_cluster->push_back((*cloud)[idx]);
-               } //*
-          cloud_cluster->width = cloud_cluster->size ();
-          cloud_cluster->height = 1;
-          cloud_cluster->is_dense = true;
+    for (int i=0; i<cloud->points.size(); i++)
+    {
 
-          clusters.push_back(cloud_cluster);
+        points.push_back({cloud->points[i].x,cloud->points[i].y,cloud->points[i].z});
+        tree->insert({cloud->points[i].x,cloud->points[i].y,cloud->points[i].z}, i);
+    }
 
+    std::vector<std::vector<int>> ind_clusters = euclideanCluster(points, tree, 3.0);
+
+    int clusterId = 0;
+    std::vector<Color> colors = {Color(1,0,0), Color(0,1,0), Color(0,0,1)};
+    for(std::vector<int> cluster : ind_clusters)
+    {
+        typename pcl::PointCloud<PointT>::Ptr cloud_cluster (new pcl::PointCloud<PointT>);
+        for(int& indice: cluster) {
+            cloud_cluster->push_back((*cloud)[indice]);
         }
+        cloud_cluster->width = cloud_cluster->size ();
+        cloud_cluster->height = 1;
+        cloud_cluster->is_dense = true;
+
+        clusters.push_back(cloud_cluster);
+        ++clusterId;
+    }
 
     // TODO:: Fill in the function to perform euclidean clustering to group detected obstacles
 

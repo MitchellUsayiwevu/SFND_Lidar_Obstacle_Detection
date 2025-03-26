@@ -5,7 +5,8 @@
 #include "../../render/box.h"
 #include <chrono>
 #include <string>
-#include "kdtree.h"
+//#include "kdtree.h"
+#include "3dtree.h"
 
 // Arguments:
 // window is the region to draw box around
@@ -31,7 +32,8 @@ pcl::PointCloud<pcl::PointXYZ>::Ptr CreateData(std::vector<std::vector<float>> p
   		pcl::PointXYZ point;
   		point.x = points[i][0];
   		point.y = points[i][1];
-  		point.z = 0;
+        point.z = points[i][2];
+//  		point.z = 0;
 
   		cloud->points.push_back(point);
 
@@ -131,7 +133,8 @@ int main ()
 	pcl::visualization::PCLVisualizer::Ptr viewer = initScene(window, 25);
 
 	// Create data
-	std::vector<std::vector<float>> points = { {-6.2,7}, {-6.3,8.4}, {-5.2,7.1}, {-5.7,6.3}, {7.2,6.1}, {8.0,5.3}, {7.2,7.1}, {0.2,-7.1}, {1.7,-6.9}, {-1.2,-7.2}, {2.2,-8.9} };
+//	std::vector<std::vector<float>> points = { {-6.2,7}, {-6.3,8.4}, {-5.2,7.1}, {-5.7,6.3}, {7.2,6.1}, {8.0,5.3}, {7.2,7.1}, {0.2,-7.1}, {1.7,-6.9}, {-1.2,-7.2}, {2.2,-8.9} };
+    std::vector<std::vector<float>> points = { {-6.2,7,3}, {-6.3,8.4,-1}, {-5.2,7.1,2.8}, {-5.7,6.3,-12}, {7.2,6.1,8}, {8.0,5.3,13}, {7.2,7.1,8.9}, {0.2,-7.1,-4.7}, {1.7,-6.9,2.4}, {-1.2,-7.2,9}, {2.2,-8.9,- 7} };
 	//std::vector<std::vector<float>> points = { {-6.2,7}, {-6.3,8.4}, {-5.2,7.1}, {-5.7,6.3} };
 	pcl::PointCloud<pcl::PointXYZ>::Ptr cloud = CreateData(points);
 
@@ -140,8 +143,8 @@ int main ()
     for (int i=0; i<points.size(); i++) 
     	tree->insert(points[i],i); 
 
-  	int it = 0;
-  	render2DTree(tree->root,viewer,window, it);
+//  	int it = 0;
+//  	render2DTree(tree->root,viewer,window, it);
   
   	std::cout << "Test Search" << std::endl;
   	std::vector<int> nearby = tree->search({-6,7},3.0);

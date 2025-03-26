@@ -145,11 +145,6 @@ std::unordered_set<int> Ransac(pcl::PointCloud<pcl::PointXYZ>::Ptr cloud, int ma
 
         if(inliersResult.size()<samples.size()){
             inliersResult = samples;
-//            line_eqn.clear();
-//            line_eqn.push_back(A);
-//            line_eqn.push_back(B);
-//            line_eqn.push_back(C);
-//            line_eqn.push_back(D);
         }
 
         return inliersResult;
